@@ -25,7 +25,7 @@ Simple Practice Time Series Forecasting with Prophet Model
 - **Prophet** : Time Series Forecasting model
 ## Live Application
 
-Check my Dashboard : [Chifan's Forecasting Practice](https://chifan-forecasting-prophet-practice.streamlit.app/)
+Check my Dashboard : [Chifan's Forecasting Practice](https://chifan-prophet-forecasting-practice.streamlit.app/)
 
 
 ## How to run
