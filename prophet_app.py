@@ -1,23 +1,26 @@
 import streamlit as st
 import pandas as pd
 from prophet import Prophet
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
 
 
 st.title("Time Series Forecasting dengan Prophet")
 st.caption("Memprediksi datetime series data berdasarkan target data menggunakan Prophet")
 
-uploaded_file = st.file_uploader("Upload file CSV", type="csv")
+uploaded_file = "DailyDelhiClimateTrain.csv"
 
 #Menampilkan opsi selanjutnya jika file sudah diupload
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
     st.write("Dataframe yang diupload:")
-    st.write(df.head()) #Menampilkan 5 data teratas pada dataframe 
+    st.write(df) #Menampilkan 5 data teratas pada dataframe 
 
-    st.write("Pilih kolom untuk 'ds' (tanggal/waktu) dan 'y' (target/variable untuk forecasting)")
+    st.write("Pilih keadaan lingkungan yang ingin anda ketahui")
     #Select box untuk memilih variabel date dan target
-    col_date = st.selectbox("Pilih kolom untuk tanggal (ds)", options=df.columns)
-    col_target = st.selectbox("Pilih kolom untuk target (y)", options=df.columns)
+    col_date = "date"
+    available_targets = [col for col in df.columns if col != col_date]
+    col_target = st.selectbox("Pilih kolom untuk target (y)", options=available_targets)
 
     if col_date == col_target:
         #Memberikan warning ketika menginputkan data yang sama karena model tidak dapat menganalisis variabel yang sama
@@ -27,7 +30,7 @@ if uploaded_file:
         df_prophet['ds'] = pd.to_datetime(df_prophet['ds']) #Convert kolom ds menjadi datetime
 
         st.write("Data yang siap untuk Prophet:")
-        st.write(df_prophet.head()) #Menampilkan 5 data teratas dari data yang ingin dianalisis
+        st.write(df_prophet) #Menampilkan 5 data teratas dari data yang ingin dianalisis
 
         period = st.slider("Pilih berapa hari untuk forecasting ke depan:", min_value=1, max_value=365) # Slider untuk menentukan jumlah hari forecasting
 
@@ -50,3 +53,20 @@ if uploaded_file:
             st.subheader('Grafik Forecasting Components')
             fig2 = model.plot_components(forecast)
             st.pyplot(fig2)
+
+            # Menggabungkan nilai aktual dan hasil prediksi pada periode yang tersedia
+            forecast_eval = forecast.set_index('ds').join(df_prophet.set_index('ds'), how='left')
+            forecast_eval = forecast_eval.dropna(subset=['y'])  # Pastikan hanya membandingkan data historis (bukan masa depan)
+
+            # Hitung metrik evaluasi
+            mae = mean_absolute_error(forecast_eval['y'], forecast_eval['yhat'])
+            mse = mean_squared_error(forecast_eval['y'], forecast_eval['yhat'])
+            rmse = np.sqrt(mse)
+            mape = np.mean(np.abs((forecast_eval['y'] - forecast_eval['yhat']) / forecast_eval['y'])) * 100
+
+            # Tampilkan hasil evaluasi
+            st.subheader("Evaluasi Model (Data Historis)")
+            st.write(f"**MAE (Mean Absolute Error):** {mae:.2f}")
+            st.write(f"**MSE (Mean Squared Error):** {mse:.2f}")
+            st.write(f"**RMSE (Root Mean Squared Error):** {rmse:.2f}")
+            st.write(f"**MAPE (Mean Absolute Percentage Error):** {mape:.2f}%")
